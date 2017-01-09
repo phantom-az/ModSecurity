@@ -48,8 +48,6 @@ class Collections :
     Collections(Collection *global, Collection *ip, Collection *session,
         Collection *user, Collection *resource);
     ~Collections();
-    void refreshCollections(Collection *global, Collection *ip, Collection *session,
-        Collection *user, Collection *resource);
 
     void store(std::string key, std::string value);
     void storeOrUpdateFirst(const std::string& collectionName,

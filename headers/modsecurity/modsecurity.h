@@ -166,18 +166,6 @@ namespace modsecurity {
 }  // namespace modsecurity
 #endif
 
-   /**
-    *      
-    * Define persistent Collections storage way
-    *
-    */
-    enum CollectionBackendType {
-        CollectionBackendLMDB,
-        CollectionBackendReDIS,
-        CollectionBackendMemcache,
-        CollectionBackendNotSet
-    };
-
 
 
 #include "modsecurity/intervention.h"
@@ -210,7 +198,7 @@ namespace modsecurity {
 #define MODSECURITY_VERSION_NUM MODSECURITY_MAJOR \
     MODSECURITY_MINOR MODSECURITY_PATCHLEVEL MODSECURITY_TAG_NUM
 
-typedef void (*LogCb) (int, void *, const char *);
+typedef void (*LogCb) (void *, const char *);
 
 #ifdef __cplusplus
 namespace modsecurity {
@@ -229,7 +217,7 @@ class ModSecurity {
 
     static const std::string whoAmI();
     void setConnectorInformation(std::string connector);
-    void setServerLogCb(LogCb cbi, int log_level);
+    void setServerLogCb(LogCb cb);
     void serverLog(void *data, const std::string& msg);
     const std::string& getConnectorInformation();
 
@@ -239,13 +227,8 @@ class ModSecurity {
     collection::Collection *m_session_collection;
     collection::Collection *m_user_collection;
 
-    int refreshCollections(CollectionBackendType typ, std::string path);
-    CollectionBackendType m_collectionBackendType;
-    std::string m_collectionBackendPath;
-
  private:
     std::string m_connector;
-    int m_logLevel;
     LogCb m_logCb;
 };
 
@@ -263,7 +246,7 @@ const char *msc_who_am_i(ModSecurity *msc);
 /** @ingroup ModSecurity_C_API */
 void msc_set_connector_info(ModSecurity *msc, const char *connector);
 /** @ingroup ModSecurity_C_API */
-void msc_set_log_cb(ModSecurity *msc, LogCb cb, int log_level);
+void msc_set_log_cb(ModSecurity *msc, LogCb cb);
 /** @ingroup ModSecurity_C_API */
 void msc_cleanup(ModSecurity *msc);
 

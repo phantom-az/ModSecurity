@@ -317,7 +317,6 @@ using modsecurity::operators::Operator;
 %token <std::string> CONFIG_DIR_AUDIT_TPE
 %token <std::string> CONFIG_DIR_DEBUG_LOG
 %token <std::string> CONFIG_DIR_DEBUG_LVL
-%token <std::string> CONFIG_DIR_COLL_BACKEND
 %token <std::string> CONFIG_DIR_GEO_DB
 %token <std::string> CONFIG_DIR_PCRE_MATCH_LIMIT
 %token <std::string> CONFIG_DIR_PCRE_MATCH_LIMIT_RECURSION
@@ -603,7 +602,6 @@ expression:
             /* op */ $3,
             /* variables */ $2,
             /* actions */ $4,
-            /* plain text */ driver.get_orig(),
             /* file name */ driver.ref.back(),
             /* line number */ @0.end.line
             );
@@ -618,7 +616,6 @@ expression:
             /* op */ $3,
             /* variables */ $2,
             /* actions */ NULL,
-            /* plain text */ driver.get_orig(),
             /* file name */ driver.ref.back(),
             /* line number */ @0.end.line
             );
@@ -633,7 +630,6 @@ expression:
             /* op */ NULL,
             /* variables */ NULL,
             /* actions */ $2,
-            /* plain text */ driver.get_orig(),
             /* file name */ driver.ref.back(),
             /* line number */ @0.end.line
             );
@@ -773,19 +769,6 @@ expression:
         }
       }
     /* Debug log: end */
-
-    | CONFIG_DIR_COLL_BACKEND
-      {
-          std::string error;
-          driver.configureCollectionBackend($1, &error);
-          if (error.size() > 0) {
-            std::stringstream ss;
-            ss << "Failed to configure collection backend: " << error;
-            driver.error(@0, ss.str());
-            YYERROR;
-          }
-      }
-
     | CONFIG_DIR_GEO_DB
       {
 #ifdef WITH_GEOIP

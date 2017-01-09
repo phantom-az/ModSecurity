@@ -73,7 +73,7 @@ void actions(ModSecurityTestResults<RegressionTest> *r,
     }
 }
 
-void logCb(int log_level, void *data, const char *msg) {
+void logCb(void *data, const char *msg) {
     std::stringstream *ss = (std::stringstream *) data;
     *ss << msg << std::endl;
 }
@@ -115,7 +115,7 @@ void perform_unit_test(ModSecurityTest<RegressionTest> *test,
         modsec = new modsecurity::ModSecurity();
         modsec->setConnectorInformation("ModSecurity-regression v0.0.1-alpha" \
             " (ModSecurity regression test utility)");
-        modsec->setServerLogCb(logCb, 0);
+        modsec->setServerLogCb(logCb);
         modsec_rules = new modsecurity::Rules(debug_log);
 
         bool found = true;
