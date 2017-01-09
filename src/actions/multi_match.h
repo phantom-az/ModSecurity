@@ -13,22 +13,33 @@
  *
  */
 
-#include "src/actions/pass.h"
-
-#include <iostream>
 #include <string>
 
-#include "modsecurity/transaction.h"
-#include "modsecurity/rule.h"
+#include "modsecurity/actions/action.h"
+
+#ifndef SRC_ACTIONS_MULTI_MATCH_H_
+#define SRC_ACTIONS_MULTI_MATCH_H_
+
+#ifdef __cplusplus
+class Transaction;
 
 namespace modsecurity {
+class Transaction;
+class Rule;
+
 namespace actions {
 
 
-bool Pass::evaluate(Rule *rule, Transaction *transaction) {
-    return true;
-}
+class MultiMatch : public Action {
+ public:
+    explicit MultiMatch(std::string action)
+        : Action(action, RunTimeOnlyIfMatchKind) { }
 
+    bool evaluate(Rule *rule, Transaction *transaction) override;
+};
 
 }  // namespace actions
 }  // namespace modsecurity
+#endif
+
+#endif  // SRC_ACTIONS_MULTI_MATCH_H_

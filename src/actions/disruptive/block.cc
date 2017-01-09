@@ -13,37 +13,36 @@
  *
  */
 
+#include "src/actions/disruptive/block.h"
+
+#include <iostream>
 #include <string>
 
-#include "modsecurity/actions/action.h"
 #include "modsecurity/transaction.h"
-
-
-#ifndef SRC_ACTIONS_CTL_RULE_REMOVE_TARGET_BY_ID_H_
-#define SRC_ACTIONS_CTL_RULE_REMOVE_TARGET_BY_ID_H_
+#include "modsecurity/rule.h"
+#include "modsecurity/rules.h"
+#include "modsecurity/intervention.h"
+#include "src/actions/data/status.h"
 
 namespace modsecurity {
 namespace actions {
-namespace ctl {
+namespace disruptive {
 
 
-class RuleRemoveTargetById : public Action {
- public:
-    explicit RuleRemoveTargetById(std::string action)
-        : Action(action, RunTimeOnlyIfMatchKind),
-        m_id(0),
-        m_target("") { }
+bool Block::evaluate(Rule *rule, Transaction *transaction, RuleMessage *rm) {
+    transaction->debug(8, "Marking request as disruptive.");
 
-    bool init(std::string *error) override;
-    bool evaluate(Rule *rule, Transaction *transaction) override;
+    for (Action *a : transaction->m_rules->defaultActions[rule->phase]) {
+        if (a->isDisruptive() == false) {
+            continue;
+        }
+        a->evaluate(rule, transaction, rm);
+    }
 
-    int m_id;
-    std::string m_target;
-};
+    return true;
+}
 
 
-}  // namespace ctl
+}  // namespace disruptive
 }  // namespace actions
 }  // namespace modsecurity
-
-#endif  // SRC_ACTIONS_CTL_RULE_REMOVE_TARGET_BY_ID_H_

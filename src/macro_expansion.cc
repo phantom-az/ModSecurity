@@ -49,7 +49,6 @@ std::string MacroExpansion::expand(const std::string& input,
      modsecurity::Rule *rule, Transaction *transaction) {
     std::string res;
     size_t pos = input.find("%{");
-    std::string v;
 
     if (pos != std::string::npos) {
         res = input;
@@ -74,21 +73,8 @@ std::string MacroExpansion::expand(const std::string& input,
                 variable.length() - (collection + 1));
 
             if (utils::string::toupper(col) == "RULE") {
-                if (rule == NULL) {
-                    transaction->debug(9, "macro expansion: cannot resolve " \
-                        "RULE variable without the Rule object");
-                    goto ops;
-                }
-                modsecurity::Variables::Rule r("RULE:" + var);
-                std::vector<const collection::Variable *> l;
-                r.evaluateInternal(transaction, rule, &l);
-                if (l.size() > 0) {
-                    v = l[0]->m_value;
-                    variableValue = &v;
-                }
-                for (auto *i : l) {
-                    delete i;
-                }
+                variableValue = transaction->m_collections.resolveFirst(
+                    "RULE:" + var);
             } else {
                 variableValue = transaction->m_collections.resolveFirst(col,
                     var);
@@ -109,7 +95,7 @@ std::string MacroExpansion::expand(const std::string& input,
         if (variableValue != NULL) {
             res.insert(start, *variableValue);
         }
-ops:
+
         pos = res.find("%{");
     }
 

@@ -21,6 +21,7 @@
 #define SRC_OPERATORS_OPERATOR_H__
 
 #include "modsecurity/transaction.h"
+#include "modsecurity/rule.h"
 
 #ifdef __cplusplus
 namespace modsecurity {
@@ -48,10 +49,17 @@ class Operator {
     }
 
     bool evaluateInternal(Transaction *t, const std::string& a);
-    virtual bool evaluate(Transaction *transaction, const std::string &str);
+    bool evaluateInternal(Transaction *t, Rule *rule,
+        const std::string& a);
 
-    bool m_negation;
+    virtual bool evaluate(Transaction *transaction, const std::string &str);
+    virtual bool evaluate(Transaction *transaction, Rule *rule,
+        const std::string &str) {
+        return evaluate(transaction, str);
+    }
+
     std::string m_match_message;
+    bool m_negation;
     std::string m_op;
     std::string m_param;
 

@@ -20,23 +20,37 @@
 
 #include "src/operators/operator.h"
 #include "src/macro_expansion.h"
+#include "modsecurity/rule.h"
 
 namespace modsecurity {
 namespace operators {
 
 
 
-bool Rx::evaluate(Transaction *transaction, const std::string& input) {
+bool Rx::evaluate(Transaction *transaction, Rule *rule,
+    const std::string& input) {
     SMatch match;
+    std::list<SMatch> matches;
 
     if (m_param.empty()) {
         return true;
     }
 
-    if (regex_search(input, &match, *m_re) && match.size() >= 1) {
-        if (transaction) {
-            transaction->m_matched.push_back(match.match);
+    matches = m_re->searchAll(input);
+    if (rule && rule->getActionsByName("capture").size() > 0 && transaction) {
+        int i = 0;
+        matches.reverse();
+        for (const SMatch& a : matches) {
+            transaction->m_collections.storeOrUpdateFirst("TX",
+                std::to_string(i), a.match);
+            transaction->debug(7, "Added regex subexpression TX." +
+                std::to_string(i) + ": " + a.match);
+            transaction->m_matched.push_back(a.match);
+            i++;
         }
+    }
+
+    if (matches.size() > 0) {
         return true;
     }
 

@@ -66,6 +66,10 @@ void actions(ModSecurityTestResults<RegressionTest> *r,
         if (it.url != NULL) {
             r->location = it.url;
         }
+        if (it.log != NULL) {
+            free(it.log);
+            it.log = NULL;
+        }
     }
 }
 
@@ -380,7 +384,9 @@ after_debug_log:
 
 int main(int argc, char **argv) {
     ModSecurityTest<RegressionTest> test;
+#ifndef NO_LOGS
     int test_number = 0;
+#endif
 
 #ifdef WITH_GEOIP
     resources.push_back("geoip");

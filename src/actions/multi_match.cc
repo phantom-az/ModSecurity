@@ -13,34 +13,22 @@
  *
  */
 
+#include "src/actions/multi_match.h"
+
+#include <iostream>
 #include <string>
 
-#include "modsecurity/actions/action.h"
-
-#ifndef SRC_ACTIONS_STATUS_H_
-#define SRC_ACTIONS_STATUS_H_
-
-#ifdef __cplusplus
-class Transaction;
+#include "modsecurity/transaction.h"
+#include "modsecurity/rule.h"
 
 namespace modsecurity {
-class Transaction;
 namespace actions {
 
-class Status : public Action {
- public:
-    explicit Status(std::string action) : Action(action, 2) { }
 
-    bool init(std::string *error) override;
-    bool evaluate(Rule *rule, Transaction *transaction) override;
-    void fillIntervention(ModSecurityIntervention *i) override;
+bool MultiMatch::evaluate(Rule *rule, Transaction *transaction) {
+    return true;
+}
 
- protected:
-    int m_status;
-};
 
 }  // namespace actions
 }  // namespace modsecurity
-#endif
-
-#endif  // SRC_ACTIONS_STATUS_H_

@@ -26,9 +26,11 @@ MAINTAINERCLEANFILES = \
 pkginclude_HEADERS = \
 	../headers/modsecurity/transaction.h \
 	../headers/modsecurity/debug_log.h \
+	../headers/modsecurity/audit_log.h \
 	../headers/modsecurity/intervention.h \
 	../headers/modsecurity/modsecurity.h \
 	../headers/modsecurity/rule.h \
+	../headers/modsecurity/rule_message.h \
 	../headers/modsecurity/rules.h \
 	../headers/modsecurity/rules_properties.h \
 	../headers/modsecurity/rules_exceptions.h
@@ -47,8 +49,11 @@ libmodsecurity_includesub_actions_HEADERS = \
 
 noinst_HEADERS = \
 	actions/*.h \
+	actions/ctl/*.h \
+	actions/data/*.h \
+	actions/disruptive/*.h \
 	actions/transformations/*.h \
-	audit_log/*.h \
+	debug_log/*.h \
 	audit_log/writer/*.h \
 	collection/backend/*.h \
 	operators/*.h \
@@ -86,9 +91,7 @@ VARIABLES = \
 ACTIONS = \
 	actions/accuracy.cc \
 	actions/action.cc \
-	actions/allow.cc \
 	actions/audit_log.cc \
-	actions/block.cc \
 	actions/capture.cc \
 	actions/chain.cc \
 	actions/ctl/audit_log_parts.cc \
@@ -98,24 +101,27 @@ ACTIONS = \
 	actions/ctl/rule_remove_target_by_id.cc \
 	actions/ctl/rule_remove_by_id.cc \
 	actions/ctl/request_body_access.cc\
+	actions/disruptive/allow.cc \
+	actions/disruptive/block.cc \
+	actions/disruptive/deny.cc \
+	actions/disruptive/redirect.cc \
+	actions/disruptive/pass.cc \
 	actions/init_col.cc \
-	actions/deny.cc \
 	actions/log.cc \
 	actions/log_data.cc \
 	actions/maturity.cc \
 	actions/msg.cc \
+	actions/multi_match.cc \
 	actions/no_audit_log.cc \
 	actions/no_log.cc \
-	actions/pass.cc \
 	actions/phase.cc \
-	actions/redirect.cc \
 	actions/rev.cc \
 	actions/rule_id.cc \
 	actions/severity.cc \
 	actions/set_sid.cc \
 	actions/set_uid.cc \
 	actions/set_var.cc \
-	actions/status.cc \
+	actions/data/status.cc \
 	actions/skip.cc \
 	actions/skip_after.cc \
 	actions/tag.cc \
@@ -214,7 +220,8 @@ UTILS = \
 	utils/regex.cc \
 	utils/sha1.cc \
 	utils/string.cc \
-	utils/system.cc
+	utils/system.cc \
+	utils/shared_files.cc
 
 
 
@@ -236,14 +243,14 @@ libmodsecurity_la_SOURCES = \
 	parser/driver.cc \
 	transaction.cc \
 	audit_log/audit_log.cc \
-	audit_log/writer.cc \
+	audit_log/writer/writer.cc \
 	audit_log/writer/https.cc \
 	audit_log/writer/serial.cc \
 	audit_log/writer/parallel.cc \
 	modsecurity.cc \
 	rules.cc \
-	debug_log.cc \
-	debug_log_writer.cc \
+	debug_log/debug_log.cc \
+	debug_log/debug_log_writer.cc \
 	macro_expansion.cc \
 	rule.cc \
 	rule_message.cc \

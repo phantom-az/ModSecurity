@@ -13,32 +13,30 @@
  *
  */
 
-#include "src/audit_log/writer.h"
+#include "src/actions/disruptive/pass.h"
 
+#include <iostream>
 #include <string>
 
-#include "src/audit_log/audit_log.h"
+#include "modsecurity/transaction.h"
+#include "modsecurity/rule.h"
+#include "modsecurity/rule_message.h"
 
 namespace modsecurity {
-namespace audit_log {
+namespace actions {
+namespace disruptive {
 
-std::string Writer::file_name(const std::string& unique_id) {
-    time_t timer;
-    time(&timer);
 
-    /** TODO: return file with time stamp and etc.  */
-    return std::string("/tmp/temp_audit_log_file.txt");
-}
-/**
- *
- * Temporary print the log into the std::cout to debug purposes.
- *
- */
-bool Writer::write(Transaction *transaction, int parts) {
-    std::cout << transaction->toJSON(parts) << std::endl;
+bool Pass::evaluate(Rule *rule, Transaction *transaction, RuleMessage *rm) {
+    intervention::free(&transaction->m_it);
+    intervention::reset(&transaction->m_it);
+
+    transaction->debug(8, "Running action pass");
+
     return true;
 }
 
 
-}  // namespace audit_log
+}  // namespace disruptive
+}  // namespace actions
 }  // namespace modsecurity

@@ -35,18 +35,21 @@ class Rx : public Operator {
  public:
     /** @ingroup ModSecurity_Operator */
     Rx(std::string op, std::string param, bool negation)
-        : Operator(op, param, negation),
-        m_param(param) {
-            m_re = new Regex(param);
+        : Operator(op, param, negation) {
+        m_re = new Regex(param);
         }
 
     ~Rx() {
         delete m_re;
     }
-    bool evaluate(Transaction *transaction, const std::string &input);
+    bool evaluate(Transaction *transaction, Rule *rule,
+        const std::string &input) override;
+    bool evaluate(Transaction *transaction,
+        const std::string &input) override {
+        return evaluate(transaction, NULL, input);
+    }
 
  private:
-    std::string m_param;
     Regex *m_re;
 };
 

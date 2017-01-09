@@ -16,7 +16,7 @@
 #include "src/parser/driver.h"
 
 #include "src/parser/seclang-parser.hh"
-#include "src/audit_log/audit_log.h"
+#include "modsecurity/audit_log.h"
 #include "modsecurity/rules_properties.h"
 
 using modsecurity::audit_log::AuditLog;
@@ -28,7 +28,8 @@ namespace Parser {
 Driver::Driver()
   : RulesProperties(),
   trace_scanning(false),
-  trace_parsing(false) {
+  trace_parsing(false),
+  lastRule(NULL) {
       m_auditLog = new audit_log::AuditLog();
       m_auditLog->refCountIncrease();
   }
@@ -163,11 +164,13 @@ int Driver::parse(const std::string &f, const std::string &ref) {
     int res = parser.parse();
     scan_end();
 
-    if (m_auditLog->init() == false) {
-        m_parserError << "Problems while initializing the audit logs" \
-            << std::endl;
+    /*
+    if (m_auditLog->init(&error) == false) {
+        m_parserError << "Problems while initializing the audit logs: " \
+            << error << std::endl;
         return false;
     }
+    */
 
     return res == 0;
 }

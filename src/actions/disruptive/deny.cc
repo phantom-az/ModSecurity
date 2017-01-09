@@ -13,40 +13,43 @@
  *
  */
 
-#include "src/actions/status.h"
+#include "src/actions/disruptive/deny.h"
 
+#include <string.h>
 #include <iostream>
 #include <string>
+#include <cstring>
 
 #include "modsecurity/transaction.h"
 
 namespace modsecurity {
 namespace actions {
+namespace disruptive {
 
 
-bool Status::init(std::string *error) {
-    try {
-        m_status = std::stoi(m_parser_payload);
-    } catch (...) {
-        error->assign("Not a valid number: " + m_parser_payload);
-        return false;
+bool Deny::evaluate(Rule *rule, Transaction *transaction, RuleMessage *rm) {
+#ifndef NO_LOGS
+    transaction->debug(8, "Running action deny");
+#endif
+    std::string log;
+
+    if (transaction->m_it.status == 200) {
+        transaction->m_it.status = 403;
     }
 
+    log.append("Access denied with code %d");
+    log.append(" (phase ");
+    log.append(std::to_string(rm->m_rule->phase - 1) + "). ");
+
+    transaction->m_it.disruptive = true;
+    intervention::freeLog(&transaction->m_it);
+    transaction->m_it.log = strdup(
+        rm->disruptiveErrorLog(transaction, log).c_str());
+
     return true;
 }
 
 
-bool Status::evaluate(Rule *rule, Transaction *transaction) {
-    transaction->m_actions.push_back(this);
-    return true;
-}
-
-
-void Status::fillIntervention(ModSecurityIntervention *i) {
-    i->status = m_status;
-    i->log = "Status";
-}
-
-
+}  // namespace disruptive
 }  // namespace actions
 }  // namespace modsecurity

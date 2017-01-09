@@ -13,34 +13,18 @@
  *
  */
 
+#include "src/audit_log/writer/writer.h"
+
 #include <string>
 
-#include "modsecurity/actions/action.h"
-
-#ifndef SRC_ACTIONS_BLOCK_H_
-#define SRC_ACTIONS_BLOCK_H_
-
-#ifdef __cplusplus
-class Transaction;
+#include "modsecurity/audit_log.h"
 
 namespace modsecurity {
-class Transaction;
-
-namespace actions {
-
-
-class Block : public Action {
- public:
-    explicit Block(std::string action) : Action(action) { }
-
-    bool evaluate(Rule *rule, Transaction *transaction) override;
-    void fillIntervention(ModSecurityIntervention *i) override;
-    bool isDisruptive() override { return true; }
-};
+namespace audit_log {
+namespace writer {
 
 
-}  // namespace actions
+
+}  // namespace writer
+}  // namespace audit_log
 }  // namespace modsecurity
-#endif
-
-#endif  // SRC_ACTIONS_BLOCK_H_

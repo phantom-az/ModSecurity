@@ -25,39 +25,92 @@ typedef yy::seclang_parser p;
 %}
 %option noyywrap nounput batch debug noinput
 
-ACTION                                  (?i:accuracy|append|block|capture|chain|deny|deprecatevar|drop|expirevar|id:[0-9]+|id:'[0-9]+'|log|multiMatch|noauditlog|nolog|pass|pause|prepend|proxy|sanitiseArg|sanitiseMatched|sanitiseMatchedBytes|sanitiseRequestHeader|sanitiseResponseHeader|setrsc|setenv|status:[0-9]+)
-ACTION_ACCURACY                         (?i:accuracy)
-ACTION_ALLOW                            ((?i:allow:(?i:REQUEST|PHASE))|(?i:phase:'(?i:REQUEST|PHASE)')|(?i:allow))
-ACTION_AUDIT_LOG                        (?i:auditlog)
-ACTION_CTL_AUDIT_ENGINE                 (?i:ctl:auditEngine)
-ACTION_CTL_AUDIT_LOG_PARTS              (?i:ctl:auditLogParts)
-ACTION_CTL_BDY_JSON                     (?i:ctl:requestBodyProcessor=JSON)
-ACTION_CTL_BDY_XML                      (?i:ctl:requestBodyProcessor=XML)
-ACTION_CTL_FORCE_REQ_BODY_VAR           (?i:ctl:forceRequestBodyVariable)
-ACTION_CTL_REQUEST_BODY_ACCESS          (?i:ctl:requestBodyAccess)
-ACTION_CTL_RULE_ENGINE                  (?i:ctl:ruleEngine)
-ACTION_CTL_RULE_REMOVE_BY_ID            (?i:ctl:ruleRemoveById)
-ACTION_CTL_RULE_REMOVE_TARGET_BY_ID     (?i:ctl:ruleRemoveTargetById)
-ACTION_CTL_RULE_REMOVE_TARGET_BY_TAG    (?i:ctl:ruleRemoveTargetByTag)
-ACTION_EXEC                             (?i:exec)
-ACTION_EXPIREVAR                        (?i:expirevar)
-ACTION_INITCOL                          (?i:initcol)
-ACTION_MATURITY                         (?i:maturity)
-ACTION_MSG                              (?i:msg)
-ACTION_PHASE                            ((?i:phase:(?i:REQUEST|RESPONSE|LOGGING|[0-9]+))|(?i:phase:'(?i:REQUEST|RESPONSE|LOGGING|[0-9]+)'))
-ACTION_REDIRECT                         (?i:redirect)
-ACTION_REV                              (?i:rev)
-ACTION_SETENV                           (?i:setenv)
-ACTION_SETSID                           (?i:setsid)
-ACTION_SETUID                           (?i:setuid)
-ACTION_SETVAR                           (?i:setvar)
-ACTION_SEVERITY                         (?i:severity)
-ACTION_SEVERITY_VALUE                   (?i:(EMERGENCY|ALERT|CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG)|[0-9]+)
-ACTION_SKIP                             (?i:skip)
-ACTION_SKIP_AFTER                       (?i:skipAfter)
-ACTION_TAG                              (?i:tag)
-ACTION_VER                              (?i:ver)
-ACTION_XMLNS                            (?i:xmlns)
+ACTION_ACCURACY                                 (?i:accuracy)
+ACTION_ALLOW                                    ((?i:allow:(?i:REQUEST|PHASE))|(?i:phase:'(?i:REQUEST|PHASE)')|(?i:allow))
+ACTION_APPEND                                   (?i:append)
+ACTION_AUDIT_LOG                                (?i:auditlog)
+ACTION_BLOCK                                    (?i:block)
+ACTION_CAPTURE                                  (?i:capture)
+ACTION_CHAIN                                    (?i:chain)
+ACTION_CTL_AUDIT_ENGINE                         (?i:ctl:auditEngine)
+ACTION_CTL_AUDIT_LOG_PARTS                      (?i:ctl:auditLogParts)
+ACTION_CTL_BDY_JSON                             (?i:ctl:requestBodyProcessor=JSON)
+ACTION_CTL_BDY_XML                              (?i:ctl:requestBodyProcessor=XML)
+ACTION_CTL_FORCE_REQ_BODY_VAR                   (?i:ctl:forceRequestBodyVariable)
+ACTION_CTL_REQUEST_BODY_ACCESS                  (?i:ctl:requestBodyAccess)
+ACTION_CTL_RULE_ENGINE                          (?i:ctl:ruleEngine)
+ACTION_CTL_RULE_REMOVE_BY_ID                    (?i:ctl:ruleRemoveById)
+ACTION_CTL_RULE_REMOVE_TARGET_BY_ID             (?i:ctl:ruleRemoveTargetById)
+ACTION_CTL_RULE_REMOVE_TARGET_BY_TAG            (?i:ctl:ruleRemoveTargetByTag)
+ACTION_DENY                                     (?i:deny)
+ACTION_DEPRECATE_VAR                            (?i:deprecatevar)
+ACTION_DROP                                     (?i:drop)
+ACTION_EXEC                                     (?i:exec)
+ACTION_EXPIRE_VAR                               (?i:expirevar)
+ACTION_ID                                       (?i:id:[0-9]+|id:'[0-9]+')
+ACTION_INITCOL                                  (?i:initcol)
+ACTION_LOG_DATA                                 (?i:logdata)
+ACTION_LOG                                      (?i:log)
+ACTION_MATURITY                                 (?i:maturity)
+ACTION_MSG                                      (?i:msg)
+ACTION_MULTI_MATCH                              (?i:multiMatch)
+ACTION_NO_AUDIT_LOG                             (?i:noauditlog)
+ACTION_NO_LOG                                   (?i:nolog)
+ACTION_PASS                                     (?i:pass)
+ACTION_PAUSE                                    (?i:pause)
+ACTION_PHASE                                    ((?i:phase:(?i:REQUEST|RESPONSE|LOGGING|[0-9]+))|(?i:phase:'(?i:REQUEST|RESPONSE|LOGGING|[0-9]+)'))
+ACTION_PREPEND                                  (?i:prepend)
+ACTION_PROXY                                    (?i:proxy)
+ACTION_REDIRECT                                 (?i:redirect)
+ACTION_REV                                      (?i:rev)
+ACTION_SANATISE_ARG                             (?i:sanitiseArg)
+ACTION_SANATISE_MATCHED_BYTES                   (?i:sanitiseMatchedBytes)
+ACTION_SANATISE_MATCHED                         (?i:sanitiseMatched)
+ACTION_SANATISE_REQUEST_HEADER                  (?i:sanitiseRequestHeader)
+ACTION_SANATISE_RESPONSE_HEADER                 (?i:sanitiseResponseHeader)
+ACTION_SETENV                                   (?i:setenv)
+ACTION_SETRSC                                   (?i:setrsc)
+ACTION_SETSID                                   (?i:setsid)
+ACTION_SETUID                                   (?i:setuid)
+ACTION_SETVAR                                   (?i:setvar)
+ACTION_SEVERITY                                 (?i:severity)
+ACTION_SEVERITY_VALUE                           (?i:(EMERGENCY|ALERT|CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG)|[0-9]+)
+ACTION_SKIP_AFTER                               (?i:skipAfter)
+ACTION_SKIP                                     (?i:skip)
+ACTION_STATUS                                   (?i:status:[0-9]+)
+ACTION_TAG                                      (?i:tag)
+ACTION_VER                                      (?i:ver)
+ACTION_XMLNS                                    (?i:xmlns)
+
+ACTION_TRANSFORMATION_CMD_LINE                  (?i:t:cmdLine)
+ACTION_TRANSFORMATION_COMPRESS_WHITESPACE       (?i:t:compressWhitespace)
+ACTION_TRANSFORMATION_CSS_DECODE                (?i:t:cssDecode)
+ACTION_TRANSFORMATION_HEX_ENCODE                (?i:t:hexEncode)
+ACTION_TRANSFORMATION_HTML_ENTITY_DECODE        (?i:t:htmlEntityDecode)
+ACTION_TRANSFORMATION_JS_DECODE                 (?i:t:jsDecode)
+ACTION_TRANSFORMATION_LENGTH                    (?i:t:length)
+ACTION_TRANSFORMATION_LOWERCASE                 (?i:t:lowercase)
+ACTION_TRANSFORMATION_MD5                       (?i:t:md5)
+ACTION_TRANSFORMATION_NONE                      (?i:t:none)
+ACTION_TRANSFORMATION_NORMALISE_PATH            (?i:t:(normalisePath|normalizePath))
+ACTION_TRANSFORMATION_NORMALISE_PATH_WIN        (?i:t:(normalisePathWin|normalizePathWin))
+ACTION_TRANSFORMATION_PARITY_EVEN_7_BIT         (?i:t:parityEven7bit)
+ACTION_TRANSFORMATION_PARITY_ODD_7_BIT          (?i:t:parityOdd7bit)
+ACTION_TRANSFORMATION_PARITY_ZERO_7_BIT         (?i:t:parityZero7bit)
+ACTION_TRANSFORMATION_REMOVE_COMMENTS           (?i:t:removeComments)
+ACTION_TRANSFORMATION_REMOVE_COMMENTS_CHAR      (?i:t:removeCommentsChar)
+ACTION_TRANSFORMATION_REMOVE_NULLS              (?i:t:removeNulls)
+ACTION_TRANSFORMATION_REMOVE_WHITESPACE         (?i:t:removeWhitespace)
+ACTION_TRANSFORMATION_REPLACE_COMMENTS          (?i:t:replaceComments)
+ACTION_TRANSFORMATION_REPLACE_NULLS             (?i:t:replaceNulls)
+ACTION_TRANSFORMATION_SHA1                      (?i:t:sha1)
+ACTION_TRANSFORMATION_SQL_HEX_DECODE            (?i:t:sqlHexDecode)
+ACTION_TRANSFORMATION_TRIM                      (?i:t:trim)
+ACTION_TRANSFORMATION_URL_DECODE                (?i:t:urlDecode)
+ACTION_TRANSFORMATION_URL_DECODE_UNI            (?i:t:urlDecodeUni)
+ACTION_TRANSFORMATION_UTF8_TO_UNICODE           (?i:t:utf8toUnicode)
+
+
 AUDIT_PARTS                             [ABCDEFHJKIZ]+
 COL_FREE_TEXT_SPACE_COMMA               ([^,"])+
 COL_NAME                                [A-Za-z]+
@@ -130,7 +183,6 @@ FREE_TEXT_QUOTE_COMMA                   [^,\']+
 FREE_TEXT_SPACE                         [^ \t]+
 FREE_TEXT_SPACE_COMMA                   [^, \t]+
 FREE_TEXT_SPACE_COMMA_QUOTE             [^, \t\"\n\r]+
-LOG_DATA                                (?i:logdata)
 NEW_LINE_FREE_TEXT                      [^, \t\"\n\r]+
 OPERATORNOARG                           (?i:@unconditionalMatch|@detectSQLi|@detectXSS|@validateUrlEncoding|@validateUtf8Encoding)
 OPERATOR                                (?i:(?:@inspectFile|@fuzzyHash|@validateByteRange|@validateDTD|@validateHash|@validateSchema|@verifyCC|@verifyCPF|@verifySSN|@gsbLookup|@rsub)|(?:\!{0,1})(?:@within|@containsWord|@contains|@endsWith|@eq|@ge|@gt|@ipMatchF|@ipMatch|@ipMatchFromFile|@le|@lt|@pmf|@pm|@pmFromFile|@rbl|@rx|@streq|@strmatch|@beginsWith))
@@ -153,7 +205,6 @@ RUN_TIME_VAR_TIME_WDAY                  (?i:TIME_WDAY)
 RUN_TIME_VAR_TIME_YEAR                  (?i:TIME_YEAR)
 RUN_TIME_VAR_XML                        (?i:XML)
 SOMETHING                               ["]{1}([^"]|([^\\"]\\\"))*["]{1}
-TRANSFORMATION                          t:(?i:(parityZero7bit|parityOdd7bit|parityEven7bit|sqlHexDecode|cmdLine|sha1|md5|hexEncode|lowercase|urlDecodeUni|urlDecode|none|compressWhitespace|removeWhitespace|replaceNulls|removeNulls|htmlEntityDecode|jsDecode|cssDecode|trim|normalizePathWin|normalisePathWin|normalizePath|normalisePath|length|utf8toUnicode|urldecode|removeCommentsChar|removeComments|replaceComments))
 VARIABLENOCOLON                         (?i:URLENCODED_ERROR|REQBODY_PROCESSOR_ERROR_MSG|REQBODY_PROCESSOR_ERROR|REQBODY_PROCESSOR|REQBODY_ERROR_MSG|REQBODY_ERROR|MULTIPART_FILE_LIMIT_EXCEEDED|MULTIPART_INVALID_QUOTING|MULTIPART_HEADER_FOLDING|MULTIPART_INVALID_HEADER_FOLDING|MULTIPART_STRICT_ERROR|MULTIPART_UNMATCHED_BOUNDARY|REMOTE_ADDR|REQUEST_LINE)
 VARIABLE                                (?i:(SERVER_NAME|MULTIPART_DATA_AFTER|RESOURCE|ARGS_COMBINED_SIZE|ARGS_GET_NAMES|ARGS_POST_NAMES|FILES_TMPNAMES|FILES_COMBINED_SIZE|FULL_REQUEST_LENGTH|REQUEST_BODY_LENGTH|REQUEST_URI_RAW|UNIQUE_ID|SERVER_PORT|SERVER_ADDR|REMOTE_PORT|REMOTE_HOST|PATH_INFO|MULTIPART_CRLF_LF_LINES|MATCHED_VAR_NAME|MATCHED_VAR|INBOUND_DATA_ERROR|OUTBOUND_DATA_ERROR|FULL_REQUEST|AUTH_TYPE|ARGS_NAMES|REMOTE_ADDR|REQUEST_BASENAME|REQUEST_BODY|REQUEST_FILENAME|REQUEST_HEADERS_NAMES|REQUEST_METHOD|REQUEST_PROTOCOL|REQUEST_URI|RESPONSE_BODY|RESPONSE_CONTENT_LENGTH|RESPONSE_CONTENT_TYPE|RESPONSE_HEADERS_NAMES|RESPONSE_PROTOCOL|RESPONSE_STATUS|USERID|SESSIONID))
 VARIABLE_COL                            (?i:(SESSION|GLOBAL|ARGS_POST|ARGS_GET|ARGS|FILES_SIZES|FILES_NAMES|FILES_TMP_CONTENT|MULTIPART_FILENAME|MULTIPART_NAME|MATCHED_VARS_NAMES|MATCHED_VARS|FILES|QUERY_STRING|REQUEST_COOKIES|REQUEST_HEADERS|RESPONSE_HEADERS|GEO|IP|REQUEST_COOKIES_NAMES))
@@ -181,6 +232,30 @@ VAR_FREE_TEXT_SPACE_COMMA               [^, \t\"]+
   driver.loc.back()->step();
   driver.save_orig(yytext);
 %}
+
+{ACTION_APPEND}                                                         { return p::make_ACTION_APPEND(yytext, *driver.loc.back()); }
+{ACTION_BLOCK}                                                          { return p::make_ACTION_BLOCK(yytext, *driver.loc.back()); }
+{ACTION_CAPTURE}                                                        { return p::make_ACTION_CAPTURE(yytext, *driver.loc.back()); }
+{ACTION_CHAIN}                                                          { return p::make_ACTION_CHAIN(yytext, *driver.loc.back()); }
+{ACTION_DENY}                                                           { return p::make_ACTION_DENY(yytext, *driver.loc.back()); }
+{ACTION_DEPRECATE_VAR}                                                  { return p::make_ACTION_DEPRECATE_VAR(yytext, *driver.loc.back()); }
+{ACTION_DROP}                                                           { return p::make_ACTION_DROP(yytext, *driver.loc.back()); }
+{ACTION_ID}                                                             { return p::make_ACTION_ID(yytext, *driver.loc.back()); }
+{ACTION_LOG}                                                            { return p::make_ACTION_LOG(yytext, *driver.loc.back()); }
+{ACTION_MULTI_MATCH}                                                    { return p::make_ACTION_MULTI_MATCH(yytext, *driver.loc.back()); }
+{ACTION_NO_AUDIT_LOG}                                                   { return p::make_ACTION_NO_AUDIT_LOG(yytext, *driver.loc.back()); }
+{ACTION_NO_LOG}                                                         { return p::make_ACTION_NO_LOG(yytext, *driver.loc.back()); }
+{ACTION_PASS}                                                           { return p::make_ACTION_PASS(yytext, *driver.loc.back()); }
+{ACTION_PAUSE}                                                          { return p::make_ACTION_PAUSE(yytext, *driver.loc.back()); }
+{ACTION_PREPEND}                                                        { return p::make_ACTION_PREPEND(yytext, *driver.loc.back()); }
+{ACTION_PROXY}                                                          { return p::make_ACTION_PROXY(yytext, *driver.loc.back()); }
+{ACTION_SANATISE_ARG}                                                   { return p::make_ACTION_SANATISE_ARG(yytext, *driver.loc.back()); }
+{ACTION_SANATISE_MATCHED}                                               { return p::make_ACTION_SANATISE_MATCHED(yytext, *driver.loc.back()); }
+{ACTION_SANATISE_MATCHED_BYTES}                                         { return p::make_ACTION_SANATISE_MATCHED_BYTES(yytext, *driver.loc.back()); }
+{ACTION_SANATISE_REQUEST_HEADER}                                        { return p::make_ACTION_SANATISE_REQUEST_HEADER(yytext, *driver.loc.back()); }
+{ACTION_SANATISE_RESPONSE_HEADER}                                       { return p::make_ACTION_SANATISE_RESPONSE_HEADER(yytext, *driver.loc.back()); }
+{ACTION_SETRSC}                                                         { return p::make_ACTION_SETRSC(yytext, *driver.loc.back()); }
+{ACTION_STATUS}                                                         { return p::make_ACTION_STATUS(yytext, *driver.loc.back()); }
 {ACTION_ACCURACY}:'{FREE_TEXT_QUOTE}'                                   { return p::make_ACTION_ACCURACY(yytext, *driver.loc.back()); }
 {ACTION_ACCURACY}:{FREE_TEXT_QUOTE}                                     { return p::make_ACTION_ACCURACY(yytext, *driver.loc.back()); }
 {ACTION_ALLOW}                                                          { return p::make_ACTION_ALLOW(yytext, *driver.loc.back()); }
@@ -197,10 +272,10 @@ VAR_FREE_TEXT_SPACE_COMMA               [^, \t\"]+
 {ACTION_CTL_RULE_REMOVE_TARGET_BY_TAG}[=]{REMOVE_RULE_BY}               { return p::make_ACTION_CTL_RULE_REMOVE_TARGET_BY_TAG(yytext, *driver.loc.back()); }
 {ACTION_EXEC}:'{VAR_FREE_TEXT_QUOTE}'                                   { return p::make_ACTION_EXEC(yytext, *driver.loc.back()); }
 {ACTION_EXEC}:{VAR_FREE_TEXT_SPACE_COMMA}                               { return p::make_ACTION_EXEC(yytext, *driver.loc.back()); }
-{ACTION_EXPIREVAR}:'{VAR_FREE_TEXT_QUOTE}={VAR_FREE_TEXT_QUOTE}'        { return p::make_ACTION_EXPIREVAR(yytext, *driver.loc.back()); }
-{ACTION_EXPIREVAR}:'{VAR_FREE_TEXT_QUOTE}'                              { return p::make_ACTION_EXPIREVAR(yytext, *driver.loc.back()); }
-{ACTION_EXPIREVAR}:{VAR_FREE_TEXT_SPACE_COMMA}                          { return p::make_ACTION_EXPIREVAR(yytext, *driver.loc.back()); }
-{ACTION_EXPIREVAR}:{VAR_FREE_TEXT_SPACE}={VAR_FREE_TEXT_SPACE_COMMA}    { return p::make_ACTION_EXPIREVAR(yytext, *driver.loc.back()); }
+{ACTION_EXPIRE_VAR}:'{VAR_FREE_TEXT_QUOTE}={VAR_FREE_TEXT_QUOTE}'       { return p::make_ACTION_EXPIRE_VAR(yytext, *driver.loc.back()); }
+{ACTION_EXPIRE_VAR}:'{VAR_FREE_TEXT_QUOTE}'                             { return p::make_ACTION_EXPIRE_VAR(yytext, *driver.loc.back()); }
+{ACTION_EXPIRE_VAR}:{VAR_FREE_TEXT_SPACE_COMMA}                         { return p::make_ACTION_EXPIRE_VAR(yytext, *driver.loc.back()); }
+{ACTION_EXPIRE_VAR}:{VAR_FREE_TEXT_SPACE}={VAR_FREE_TEXT_SPACE_COMMA}   { return p::make_ACTION_EXPIRE_VAR(yytext, *driver.loc.back()); }
 {ACTION_INITCOL}:{COL_NAME}={COL_FREE_TEXT_SPACE_COMMA}                 { return p::make_ACTION_INITCOL(yytext, *driver.loc.back()); }
 {ACTION_MATURITY}:'{FREE_TEXT_QUOTE}'                                   { return p::make_ACTION_MATURITY(yytext, *driver.loc.back()); }
 {ACTION_MATURITY}:{FREE_TEXT_QUOTE}                                     { return p::make_ACTION_MATURITY(yytext, *driver.loc.back()); }
@@ -228,7 +303,37 @@ VAR_FREE_TEXT_SPACE_COMMA               [^, \t\"]+
 {ACTION_TAG}:'{FREE_TEXT_QUOTE}'                                        { return p::make_ACTION_TAG(yytext, *driver.loc.back()); }
 {ACTION_VER}:'{FREE_TEXT_QUOTE}'                                        { return p::make_ACTION_VER(yytext, *driver.loc.back()); }
 {ACTION_XMLNS}:{FREE_TEXT_SPACE_COMMA_QUOTE}                            { return p::make_ACTION_XMLNS(yytext, *driver.loc.back()); }
-{ACTION}                                                                { return p::make_ACTION(yytext, *driver.loc.back()); }
+
+{ACTION_TRANSFORMATION_PARITY_ZERO_7_BIT}                               { return p::make_ACTION_TRANSFORMATION_PARITY_ZERO_7_BIT(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_PARITY_ODD_7_BIT}                                { return p::make_ACTION_TRANSFORMATION_PARITY_ODD_7_BIT(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_PARITY_EVEN_7_BIT}                               { return p::make_ACTION_TRANSFORMATION_PARITY_EVEN_7_BIT(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_SQL_HEX_DECODE}                                  { return p::make_ACTION_TRANSFORMATION_SQL_HEX_DECODE(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_CMD_LINE}                                        { return p::make_ACTION_TRANSFORMATION_CMD_LINE(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_SHA1}                                            { return p::make_ACTION_TRANSFORMATION_SHA1(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_MD5}                                             { return p::make_ACTION_TRANSFORMATION_MD5(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_HEX_ENCODE}                                      { return p::make_ACTION_TRANSFORMATION_HEX_ENCODE(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_LOWERCASE}                                       { return p::make_ACTION_TRANSFORMATION_LOWERCASE(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_URL_DECODE_UNI}                                  { return p::make_ACTION_TRANSFORMATION_URL_DECODE_UNI(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_URL_DECODE}                                      { return p::make_ACTION_TRANSFORMATION_URL_DECODE(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_NONE}                                            { return p::make_ACTION_TRANSFORMATION_NONE(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_COMPRESS_WHITESPACE}                             { return p::make_ACTION_TRANSFORMATION_COMPRESS_WHITESPACE(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_REMOVE_WHITESPACE}                               { return p::make_ACTION_TRANSFORMATION_REMOVE_WHITESPACE(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_REPLACE_NULLS}                                   { return p::make_ACTION_TRANSFORMATION_REPLACE_NULLS(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_REMOVE_NULLS}                                    { return p::make_ACTION_TRANSFORMATION_REMOVE_NULLS(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_HTML_ENTITY_DECODE}                              { return p::make_ACTION_TRANSFORMATION_HTML_ENTITY_DECODE(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_JS_DECODE}                                       { return p::make_ACTION_TRANSFORMATION_JS_DECODE(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_CSS_DECODE}                                      { return p::make_ACTION_TRANSFORMATION_CSS_DECODE(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_TRIM}                                            { return p::make_ACTION_TRANSFORMATION_TRIM(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_NORMALISE_PATH_WIN}                              { return p::make_ACTION_TRANSFORMATION_NORMALISE_PATH_WIN(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_NORMALISE_PATH}                                  { return p::make_ACTION_TRANSFORMATION_NORMALISE_PATH(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_LENGTH}                                          { return p::make_ACTION_TRANSFORMATION_LENGTH(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_UTF8_TO_UNICODE}                                 { return p::make_ACTION_TRANSFORMATION_UTF8_TO_UNICODE(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_REMOVE_COMMENTS_CHAR}                            { return p::make_ACTION_TRANSFORMATION_REMOVE_COMMENTS_CHAR(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_REMOVE_COMMENTS}                                 { return p::make_ACTION_TRANSFORMATION_REMOVE_COMMENTS(yytext, *driver.loc.back()); }
+{ACTION_TRANSFORMATION_REPLACE_COMMENTS}                                { return p::make_ACTION_TRANSFORMATION_REPLACE_COMMENTS(yytext, *driver.loc.back()); }
+
+
+{ACTION_LOG_DATA}:'{FREE_TEXT_QUOTE}'                                   { return p::make_ACTION_LOG_DATA(yytext, *driver.loc.back()); }
 {CONFIG_COMPONENT_SIG}[ \t]+["]{FREE_TEXT}["]                           { return p::make_CONFIG_COMPONENT_SIG(strchr(yytext, ' ') + 2, *driver.loc.back()); }
 {CONFIG_DIR_AUDIT_DIR_MOD}[ ]{CONFIG_VALUE_NUMBER}                      { return p::make_CONFIG_DIR_AUDIT_DIR_MOD(strchr(yytext, ' ') + 1, *driver.loc.back()); }
 {CONFIG_DIR_AUDIT_DIR}[ ]{CONFIG_VALUE_PATH}                            { return p::make_CONFIG_DIR_AUDIT_DIR(strchr(yytext, ' ') + 1, *driver.loc.back()); }
@@ -284,8 +389,6 @@ VAR_FREE_TEXT_SPACE_COMMA               [^, \t\"]+
 {CONGIG_DIR_SEC_TMP_DIR}[ ]{CONFIG_VALUE_PATH}                          { return p::make_CONGIG_DIR_SEC_TMP_DIR(strchr(yytext, ' ') + 1, *driver.loc.back()); }
 {DIRECTIVE_SECRULESCRIPT}[ ]{CONFIG_VALUE_PATH}                         { return p::make_DIRECTIVE_SECRULESCRIPT(yytext, *driver.loc.back()); }
 {DIRECTIVE}                                                             { return p::make_DIRECTIVE(yytext, *driver.loc.back()); }
-{LOG_DATA}:'{FREE_TEXT_QUOTE}'                                          { return p::make_LOG_DATA(yytext, *driver.loc.back()); }
-{TRANSFORMATION}                                                        { return p::make_TRANSFORMATION(yytext, *driver.loc.back()); }
 {CONFIG_SEC_REMOTE_RULES_FAIL_ACTION}                                   { return p::make_CONFIG_SEC_REMOTE_RULES_FAIL_ACTION(yytext, *driver.loc.back()); }
 {CONFIG_SEC_COLLECTION_TIMEOUT}[ ]{CONFIG_VALUE_NUMBER}                 { return p::make_CONFIG_SEC_COLLECTION_TIMEOUT(strchr(yytext, ' ') + 1, *driver.loc.back()); }
 {CONFIG_DIR_COLL_BACKEND}[ ]{CONFIG_VALUE_PATH}                         { return p::make_CONFIG_DIR_COLL_BACKEND(strchr(yytext, ' ') + 1, *driver.loc.back()); }

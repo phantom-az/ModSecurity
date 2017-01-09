@@ -13,34 +13,37 @@
  *
  */
 
-#include "src/actions/deny.h"
-
-#include <iostream>
 #include <string>
 
-#include "modsecurity/transaction.h"
+#include "modsecurity/actions/action.h"
+#include "modsecurity/rule_message.h"
+
+#ifndef SRC_ACTIONS_DISRUPTIVE_BLOCK_H_
+#define SRC_ACTIONS_DISRUPTIVE_BLOCK_H_
+
+#ifdef __cplusplus
+class Transaction;
 
 namespace modsecurity {
+class Transaction;
+
 namespace actions {
+namespace disruptive {
 
 
-bool Deny::evaluate(Rule *rule, Transaction *transaction) {
-#ifndef NO_LOGS
-    transaction->debug(8, "Running action deny");
-#endif
-    transaction->m_actions.push_back(this);
-    return true;
-}
+class Block : public Action {
+ public:
+    explicit Block(std::string action) : Action(action) { }
+
+    bool evaluate(Rule *rule, Transaction *transaction,
+        RuleMessage *rm) override;
+    bool isDisruptive() override { return true; }
+};
 
 
-void Deny::fillIntervention(ModSecurityIntervention *i) {
-    if (i->status == 200) {
-        i->status = 403;
-    }
-    i->log = "Deny action";
-    i->disruptive = true;
-}
-
-
+}  // namespace disruptive
 }  // namespace actions
 }  // namespace modsecurity
+#endif
+
+#endif  // SRC_ACTIONS_DISRUPTIVE_BLOCK_H_

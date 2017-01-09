@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 #include <list>
+#include <cstring>
 #endif
 
 #ifndef HEADERS_MODSECURITY_RULE_MESSAGE_H_
@@ -46,27 +47,14 @@ class RuleMessage {
         m_maturity(rule->m_maturity),
         m_rule(rule),
         m_saveMessage(false),
-        m_match(std::string(""))
-    { }
-
-    RuleMessage(Rule *rule, std::string message) :
-        m_ruleFile(rule->m_fileName),
-        m_ruleLine(rule->m_lineNumber),
-        m_ruleId(rule->rule_id),
-        m_rev(rule->m_rev),
-        m_accuracy(rule->m_accuracy),
-        m_message(message),
-        m_data(std::string("")),
-        m_severity(0),
-        m_ver(rule->m_ver),
-        m_maturity(rule->m_maturity),
-        m_rule(rule),
-        m_saveMessage(false),
+        m_noAuditLog(false),
         m_match(std::string(""))
     { }
 
     std::string errorLog(Transaction *trans);
-
+    std::string disruptiveErrorLog(Transaction *trans, std::string log2);
+    std::string noClientErrorLog(Transaction *trans);
+    std::string errorLogTail(Transaction *trans);
 
     std::string m_match;
     std::string m_ruleFile;
@@ -81,7 +69,9 @@ class RuleMessage {
     int m_accuracy;
 
     std::list<std::string> m_tags;
+    std::list<std::string> m_server_logs;
 
+    bool m_noAuditLog;
     Rule *m_rule;
     bool m_saveMessage;
 };

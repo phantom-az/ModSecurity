@@ -80,6 +80,9 @@ void Rules::decrementReferenceCount(void) {
 Rules::~Rules() {
     int i = 0;
 
+    free(unicode_map_table);
+    unicode_map_table = NULL;
+
     /** Cleanup the rules */
     for (int i = 0; i < modsecurity::Phases::NUMBER_OF_PHASES; i++) {
         std::vector<Rule *> rules = this->rules[i];
@@ -97,12 +100,6 @@ Rules::~Rules() {
             tmp->pop_back();
         }
     }
-    /** Cleanup audit log */
-    if (m_auditLog) {
-        m_auditLog->refCountDecreaseAndCheck();
-    }
-
-    free(unicode_map_table);
 }
 
 
@@ -189,20 +186,20 @@ int Rules::evaluate(int phase, Transaction *transaction) {
     debug(9, "This phase consists of " + std::to_string(rules.size()) + \
         " rule(s).");
 
-    if (transaction->m_allowType == actions::FromNowOneAllowType
+    if (transaction->m_allowType == actions::disruptive::FromNowOneAllowType
         && phase != modsecurity::Phases::LoggingPhase) {
         debug(9, "Skipping all rules evaluation on this phase as request " \
             "through the utilization of an `allow' action.");
         return true;
     }
-    if (transaction->m_allowType == actions::RequestAllowType
+    if (transaction->m_allowType == actions::disruptive::RequestAllowType
         && phase <= modsecurity::Phases::RequestBodyPhase) {
         debug(9, "Skipping all rules evaluation on this phase as request " \
             "through the utilization of an `allow' action.");
         return true;
     }
-    if (transaction->m_allowType != actions::NoneAllowType) {
-        transaction->m_allowType = actions::NoneAllowType;
+    if (transaction->m_allowType != actions::disruptive::NoneAllowType) {
+        transaction->m_allowType = actions::disruptive::NoneAllowType;
     }
 
     for (int i = 0; i < rules.size(); i++) {
@@ -223,7 +220,8 @@ int Rules::evaluate(int phase, Transaction *transaction) {
             debug(9, "Skipped rule id '" + std::to_string(rule->rule_id) \
                 + "' due to a `skip' action. Still " + \
                 std::to_string(transaction->m_skip_next) + " to be skipped.");
-        } else if (transaction->m_allowType != actions::NoneAllowType) {
+        } else if (transaction->m_allowType
+            != actions::disruptive::NoneAllowType) {
             debug(9, "Skipped rule id '" + std::to_string(rule->rule_id) \
                 + "' as request trough the utilization of an `allow' action.");
         } else if (m_exceptions.contains(rule->rule_id)) {
@@ -231,6 +229,11 @@ int Rules::evaluate(int phase, Transaction *transaction) {
                 + "'. Removed by an SecRuleRemove directive.");
         } else {
             rule->evaluate(transaction);
+            if (transaction->m_it.disruptive == true) {
+                debug(8, "Skipping this phase as this " \
+                    "request was already intercepted.");
+                break;
+            }
         }
     }
     return 1;
@@ -244,17 +247,6 @@ int Rules::merge(Driver *from) {
         dynamic_cast<RulesProperties *>(this),
         &m_parserError);
 
-    if (from->m_auditLog != NULL && this->m_auditLog != NULL) {
-        this->m_auditLog->refCountDecreaseAndCheck();
-    }
-
-    if (from->m_auditLog) {
-        this->m_auditLog = from->m_auditLog;
-    }
-    if (this->m_auditLog != NULL) {
-        this->m_auditLog->refCountIncrease();
-    }
-
     return amount_of_rules;
 }
 
@@ -265,16 +257,6 @@ int Rules::merge(Rules *from) {
         dynamic_cast<RulesProperties *>(from),
         dynamic_cast<RulesProperties *>(this),
         &m_parserError);
-
-    if (from->m_auditLog != NULL && this->m_auditLog != NULL) {
-        this->m_auditLog->refCountDecreaseAndCheck();
-    }
-    if (from->m_auditLog) {
-        this->m_auditLog = from->m_auditLog;
-    }
-    if (this->m_auditLog != NULL) {
-        this->m_auditLog->refCountIncrease();
-    }
 
     return amount_of_rules;
 }
@@ -303,10 +285,8 @@ void Rules::dump() {
 }
 
 
-extern "C" Rules *msc_create_rules_set() {
-    Rules *rules = new Rules();
-
-    return rules;
+extern "C" Rules *msc_create_rules_set(void) {
+    return new Rules();
 }
 
 

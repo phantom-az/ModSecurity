@@ -17,25 +17,28 @@
 
 #include "modsecurity/actions/action.h"
 #include "modsecurity/transaction.h"
+#include "modsecurity/rule_message.h"
 
-#ifndef SRC_ACTIONS_DENY_H_
-#define SRC_ACTIONS_DENY_H_
+#ifndef SRC_ACTIONS_DISRUPTIVE_DENY_H_
+#define SRC_ACTIONS_DISRUPTIVE_DENY_H_
 
 namespace modsecurity {
 namespace actions {
+namespace disruptive {
 
 
 class Deny : public Action {
  public:
     explicit Deny(std::string action) : Action(action) { }
 
-    bool evaluate(Rule *rule, Transaction *transaction) override;
-    void fillIntervention(ModSecurityIntervention *i) override;
+    bool evaluate(Rule *rule, Transaction *transaction,
+        RuleMessage *rm) override;
     bool isDisruptive() override { return true; }
 };
 
 
+}  // namespace disruptive
 }  // namespace actions
 }  // namespace modsecurity
 
-#endif  // SRC_ACTIONS_DENY_H_
+#endif  // SRC_ACTIONS_DISRUPTIVE_DENY_H_

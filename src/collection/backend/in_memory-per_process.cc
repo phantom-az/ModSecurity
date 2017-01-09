@@ -77,7 +77,7 @@ void InMemoryPerProcess::resolveSingleMatch(const std::string& var,
     auto range = this->equal_range(var);
 
     for (auto it = range.first; it != range.second; ++it) {
-        l->push_back(new Variable(var, it->second));
+        l->push_back(new Variable(&it->first, &it->second));
     }
 }
 
@@ -90,22 +90,30 @@ void InMemoryPerProcess::resolveMultiMatches(const std::string& var,
     auto range = this->equal_range(var);
 
     for (auto it = range.first; it != range.second; ++it) {
-        l->insert(l->begin(), new Variable(var, it->second));
+        l->insert(l->begin(), new Variable(&var, &it->second));
     }
 
     for (const auto& x : *this) {
+        bool diff = false;
+
         if (x.first.size() <= keySize + 1) {
             continue;
         }
         if (x.first.at(keySize) != ':') {
             continue;
         }
-        std::string fu = utils::string::toupper(x.first);
-        std::string fvar = utils::string::toupper(var);
-        if (fu.compare(0, keySize, fvar) != 0) {
+
+        for (int i = 0; i < keySize && diff == false; i++) {
+            if (std::tolower(x.first.at(i)) != std::tolower(var.at(i))) {
+                diff = true;
+            }
+        }
+
+        if (diff == true) {
             continue;
         }
-        l->insert(l->begin(), new Variable(x.first, x.second));
+
+        l->insert(l->begin(), new Variable(&x.first, &x.second));
     }
 }
 
@@ -142,7 +150,7 @@ void InMemoryPerProcess::resolveRegularExpression(const std::string& var,
             continue;
         }
 
-        l->insert(l->begin(), new Variable(x.first, x.second));
+        l->insert(l->begin(), new Variable(&x.first, &x.second));
     }
 }
 
@@ -155,17 +163,6 @@ std::string* InMemoryPerProcess::resolveFirst(const std::string& var) {
     }
 
     return NULL;
-}
-
-
-std::string InMemoryPerProcess::resolveFirstCopy(const std::string& var) {
-    auto range = equal_range(var);
-
-    for (auto it = range.first; it != range.second; ++it) {
-        return it->second;
-    }
-
-    return "";
 }
 
 

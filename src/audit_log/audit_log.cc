@@ -13,7 +13,7 @@
  *
  */
 
-#include "src/audit_log/audit_log.h"
+#include "modsecurity/audit_log.h"
 
 #include <stddef.h>
 #include <stdio.h>
@@ -21,9 +21,11 @@
 
 #include <fstream>
 
+#include "modsecurity/rule_message.h"
 #include "src/audit_log/writer/https.h"
 #include "src/audit_log/writer/parallel.h"
 #include "src/audit_log/writer/serial.h"
+#include "src/audit_log/writer/writer.h"
 #include "src/utils/regex.h"
 
 #define PARTS_CONSTAINS(a, c) \
@@ -38,55 +40,68 @@
           parts = parts & ~c; \
     }
 
+#define AL_MERGE_STRING_CONF(a, c) \
+    if (a.empty() == false) { \
+        c = a; \
+    }
+
+
 namespace modsecurity {
 namespace audit_log {
 
+
 AuditLog::AuditLog()
-    : m_status(OffAuditLogStatus),
-    m_path1(""),
+    : m_path1(""),
     m_path2(""),
     m_storage_dir(""),
-    m_parts(AAuditLogPart | BAuditLogPart | CAuditLogPart | FAuditLogPart
-            | HAuditLogPart | ZAuditLogPart),
-    m_type(ParallelAuditLogType),
-    m_writer(NULL),
+    m_filePermission(-1),
+    m_directoryPermission(-1),
+    m_parts(-1),
+    m_status(NotSetLogStatus),
+    m_type(NotSetAuditLogType),
     m_relevant(""),
-    filePermission(0600),
-    directoryPermission(0766),
-    m_refereceCount(0) { }
+    m_writer(NULL),
+    m_refereceCount(1) { }
+
 
 AuditLog::~AuditLog() {
     if (m_writer) {
-        m_writer->refCountDecreaseAndCheck();
+        delete m_writer;
+        m_writer = NULL;
     }
 }
 
-void AuditLog::refCountIncrease() {
-    m_refereceCount++;
-}
-
-
-void AuditLog::refCountDecreaseAndCheck() {
-    m_refereceCount--;
-    if (m_refereceCount == 0) {
-        delete this;
-    }
-}
 
 bool AuditLog::setStorageDirMode(int permission) {
-    this->directoryPermission = permission;
+    this->m_directoryPermission = permission;
     return true;
 }
 
 
 bool AuditLog::setFileMode(int permission) {
-    this->filePermission = permission;
+    this->m_filePermission = permission;
     return true;
 }
 
 
-bool AuditLog::setStatus(AuditLogStatus new_status) {
-    this->m_status = new_status;
+int AuditLog::getFilePermission() {
+    if (m_filePermission == -1) {
+        return m_defaultFilePermission;
+    }
+
+    return m_filePermission;
+}
+
+int AuditLog::getDirectoryPermission() {
+    if (m_directoryPermission == -1) {
+        return m_defaultDirectoryPermission;
+    }
+
+    return m_directoryPermission;
+}
+
+bool AuditLog::setStatus(AuditLogStatus status) {
+    this->m_status = status;
     return true;
 }
 
@@ -172,34 +187,49 @@ bool AuditLog::setParts(const std::basic_string<char>& new_parts) {
 }
 
 
+int AuditLog::getParts() {
+    if (m_parts == -1) {
+        return m_defaultParts;
+    }
+
+    return m_parts;
+}
+
+
 bool AuditLog::setType(AuditLogType audit_type) {
     this->m_type = audit_type;
     return true;
 }
 
 
-bool AuditLog::init() {
-    if (m_type == ParallelAuditLogType) {
-        m_writer = new audit_log::writer::Parallel(this);
-    }
+
+bool AuditLog::init(std::string *error) {
     if (m_type == SerialAuditLogType) {
         m_writer = new audit_log::writer::Serial(this);
-    }
-    if (m_type == HttpsAuditLogType) {
+    } else if (m_type == HttpsAuditLogType) {
         m_writer = new audit_log::writer::Https(this);
+    } else {
+        /*
+         * if (m_type == ParallelAuditLogType
+         * || m_type == NotSetAuditLogType)
+         *
+         */
+        m_writer = new audit_log::writer::Parallel(this);
     }
-    m_writer->refCountIncrease();
 
-    if (m_writer == NULL || m_writer->init() == false) {
-        std::cout << "not able to open the log for write." << std::endl;
+    if (m_status == OffAuditLogStatus || m_status == NotSetLogStatus) {
+        return true;
+    }
+
+    if (m_writer == NULL || m_writer->init(error) == false) {
         return false;
     }
 
     /* Sanity check */
     if (m_status == RelevantOnlyAuditLogStatus) {
         if (m_relevant.empty()) {
-            std::cout << "m_relevant cannot be null while status is " << \
-                "RelevantOnly" << std::endl;
+            error->assign("m_relevant cannot be null while status is set to " \
+                "RelevantOnly");
             return false;
         }
     }
@@ -214,6 +244,7 @@ bool AuditLog::isRelevant(int status) {
     if (m_relevant.empty()) {
         return false;
     }
+
 
     if (sstatus.empty()) {
         return true;
@@ -230,8 +261,21 @@ bool AuditLog::saveIfRelevant(Transaction *transaction) {
 
 
 bool AuditLog::saveIfRelevant(Transaction *transaction, int parts) {
-    if (this->isRelevant(transaction->m_httpCodeReturned) == false &&
-        transaction->m_toBeSavedInAuditlogs == false) {
+    bool saveAnyway = false;
+    if (m_status == OffAuditLogStatus || m_status == NotSetLogStatus) {
+        return true;
+    }
+
+    for (RuleMessage &i : transaction->m_rulesMessages) {
+        if (i.m_noAuditLog == false) {
+            saveAnyway = true;
+            break;
+        }
+    }
+
+    if ((m_status == RelevantOnlyAuditLogStatus
+        && this->isRelevant(transaction->m_httpCodeReturned) == false)
+        && saveAnyway == false) {
         transaction->debug(5, "Return code `" +
             std::to_string(transaction->m_httpCodeReturned) + "'" \
             " is not interesting to audit logs, relevant code(s): `" +
@@ -240,23 +284,21 @@ bool AuditLog::saveIfRelevant(Transaction *transaction, int parts) {
         return false;
     }
 
-    /**
-     * Even if it is relevant, if it is marked not to be save,
-     * we won't save it.
-     *
-     */
-    if (transaction->m_toNotBeSavedInAuditLogs == true) {
-        transaction->debug(5, "This request was marked to not " \
-            "be saved in the audit logs.");
-        return false;
-    }
-
     if (parts == -1) {
         parts = m_parts;
     }
     transaction->debug(5, "Saving this request as part " \
             "of the audit logs.");
-    m_writer->write(transaction, parts);
+    if (m_writer == NULL) {
+        transaction->debug(1, "Internal error, audit log writer is null");
+    } else {
+        std::string error;
+        bool a = m_writer->write(transaction, parts, &error);
+        if (a == false) {
+            transaction->debug(1, "Cannot save the audit log: " + error);
+            return false;
+        }
+    }
 
     return true;
 }
@@ -264,6 +306,36 @@ bool AuditLog::saveIfRelevant(Transaction *transaction, int parts) {
 
 bool AuditLog::close() {
     return true;
+}
+
+
+bool AuditLog::merge(AuditLog *from, std::string *error) {
+    AL_MERGE_STRING_CONF(from->m_path1, m_path1);
+    AL_MERGE_STRING_CONF(from->m_path2, m_path2);
+    AL_MERGE_STRING_CONF(from->m_storage_dir, m_storage_dir);
+    AL_MERGE_STRING_CONF(from->m_relevant, m_relevant);
+
+    if (from->m_filePermission != -1) {
+        m_filePermission = from->m_filePermission;
+    }
+
+    if (from->m_directoryPermission != -1) {
+        m_directoryPermission = from->m_directoryPermission;
+    }
+
+    if (from->m_type != NotSetAuditLogType) {
+        m_type = from->m_type;
+    }
+
+    if (from->m_status != NotSetLogStatus) {
+        m_status = from->m_status;
+    }
+
+    if (from->m_parts != -1) {
+        m_parts = from->m_parts;
+    }
+
+    return init(error);
 }
 
 

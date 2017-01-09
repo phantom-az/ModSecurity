@@ -13,25 +13,26 @@
  *
  */
 
+#ifndef SRC_UTILS_SHARED_FILES_H_
+#define SRC_UTILS_SHARED_FILES_H_
+
+
 #include <stdio.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/types.h>
 
-#include <iostream>
-#include <map>
 #include <string>
-#include <cstring>
 
-
-#ifndef SRC_DEBUG_LOG_WRITER_H_
-#define SRC_DEBUG_LOG_WRITER_H_
+#include "modsecurity/transaction.h"
+#include "modsecurity/audit_log.h"
 
 
 namespace modsecurity {
+namespace utils {
 
 
-typedef struct debug_log_file_handler {
+typedef struct msc_file_handler {
     char *file_name;
     FILE *fp;
     int file_handler;
@@ -41,42 +42,42 @@ typedef struct debug_log_file_handler {
     pthread_mutex_t lock;
     void *next;
     void *previous;
-} debug_log_file_handler_t;
+} msc_file_handler_t;
 
 
-/** @ingroup ModSecurity_CPP_API */
-class DebugLogWriter {
+class SharedFiles {
  public:
-    static DebugLogWriter& getInstance() {
-        static DebugLogWriter instance;
+    bool open(const std::string& fileName, std::string *error);
+    void close(const std::string& fileName);
+    bool write(const std::string& fileName, const std::string &msg,
+        std::string *error);
+    static SharedFiles& getInstance() {
+        static SharedFiles instance;
         return instance;
     }
 
-    void write_log(const std::string& file, const std::string& msg);
-    void close(const std::string& m_fileName);
-    int open(const std::string& m_fileName, std::string *error);
-
  protected:
-    debug_log_file_handler_t *find_handler(const std::string &fileName);
-    debug_log_file_handler_t *add_new_handler(const std::string &fileName,
+    msc_file_handler_t *find_handler(const std::string &fileName);
+    msc_file_handler_t *add_new_handler(const std::string &fileName,
         std::string *error);
 
  private:
-    DebugLogWriter() : m_first(NULL) { }
-    ~DebugLogWriter() { }
+    SharedFiles() : m_first(NULL) { }
+    ~SharedFiles() { }
 
     // C++ 03
     // ========
     // Dont forget to declare these two. You want to make sure they
     // are unacceptable otherwise you may accidentally get copies of
     // your singleton appearing.
-    DebugLogWriter(DebugLogWriter const&);
-    void operator=(DebugLogWriter const&);
+    SharedFiles(SharedFiles const&);
+    void operator=(SharedFiles const&);
 
-    struct debug_log_file_handler *m_first;
+    msc_file_handler_t *m_first;
 };
 
 
+}  // namespace utils
 }  // namespace modsecurity
 
-#endif  // SRC_DEBUG_LOG_WRITER_H_
+#endif  // SRC_UTILS_SHARED_FILES_H_

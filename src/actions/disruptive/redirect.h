@@ -16,25 +16,44 @@
 #include <string>
 
 #include "modsecurity/actions/action.h"
-#include "modsecurity/transaction.h"
+#include "modsecurity/rule_message.h"
 
-#ifndef SRC_ACTIONS_PASS_H_
-#define SRC_ACTIONS_PASS_H_
+#ifndef SRC_ACTIONS_DISRUPTIVE_REDIRECT_H_
+#define SRC_ACTIONS_DISRUPTIVE_REDIRECT_H_
+
+#ifdef __cplusplus
+class Transaction;
 
 namespace modsecurity {
+class Transaction;
+
 namespace actions {
+namespace disruptive {
 
 
-class Pass : public Action {
+class Redirect : public Action {
  public:
-    explicit Pass(std::string action) : Action(action) { }
+    explicit Redirect(const std::string &action)
+        : Action(action, RunTimeOnlyIfMatchKind),
+        m_status(0),
+        m_urlExpanded(""),
+        m_url("") { }
 
-    bool evaluate(Rule *rule, Transaction *transaction) override;
+    bool evaluate(Rule *rule, Transaction *transaction, RuleMessage *rm)
+        override;
+    bool init(std::string *error) override;
     bool isDisruptive() override { return true; }
+
+ private:
+    int m_status;
+    std::string m_urlExpanded;
+    std::string m_url;
 };
 
+
+}  // namespace disruptive
 }  // namespace actions
 }  // namespace modsecurity
+#endif
 
-
-#endif  // SRC_ACTIONS_PASS_H_
+#endif  // SRC_ACTIONS_DISRUPTIVE_REDIRECT_H_

@@ -33,13 +33,13 @@
 #include <vector>
 
 #include "modsecurity/actions/action.h"
-#include "src/actions/deny.h"
+#include "src/actions/disruptive/deny.h"
 #include "modsecurity/intervention.h"
 #include "modsecurity/modsecurity.h"
 #include "src/request_body_processor/multipart.h"
 #include "src/request_body_processor/xml.h"
 #include "src/request_body_processor/json.h"
-#include "src/audit_log/audit_log.h"
+#include "modsecurity/audit_log.h"
 #include "src/unique_id.h"
 #include "src/utils/string.h"
 #include "src/utils/system.h"
@@ -48,7 +48,7 @@
 #include "modsecurity/rule.h"
 #include "modsecurity/rule_message.h"
 #include "modsecurity/rules_properties.h"
-#include "src/actions/allow.h"
+#include "src/actions/disruptive/allow.h"
 
 
 
@@ -102,11 +102,10 @@ Transaction::Transaction(ModSecurity *ms, Rules *rules, void *logCbData)
     m_clientPort(0),
     m_serverPort(0),
     m_uri(""),
+    m_uri_no_query_string_decoded(""),
     m_method(""),
     m_httpVersion(""),
     m_rules(rules),
-    m_toBeSavedInAuditlogs(false),
-    m_toNotBeSavedInAuditLogs(false),
     m_timeStamp(std::time(NULL)),
     m_httpCodeReturned(200),
     m_highestSeverityAction(255),
@@ -122,10 +121,9 @@ Transaction::Transaction(ModSecurity *ms, Rules *rules, void *logCbData)
     m_responseContentType(NULL),
     m_requestBodyAccess(Rules::PropertyNotSetConfigBoolean),
     m_marker(""),
-    m_allowType(modsecurity::actions::NoneAllowType),
+    m_allowType(modsecurity::actions::disruptive::NoneAllowType),
     m_skip_next(0),
     m_creationTimeStamp(utils::cpu_seconds()),
-    m_interceptMessage(""),
     m_logCbData(logCbData),
     m_ms(ms),
     m_collections(ms->m_global_collection, ms->m_ip_collection,
@@ -136,21 +134,6 @@ Transaction::Transaction(ModSecurity *ms, Rules *rules, void *logCbData)
     m_id = std::to_string(this->m_timeStamp) + \
         std::to_string(modsecurity::utils::generate_transaction_unique_id());
     m_rules->incrementReferenceCount();
-
-    this->init_collections();
-
-#ifndef NO_LOGS
-    this->debug(4, "Initializing transaction");
-#endif
-}
-
-void Transaction::init_collections() {
-
-    // FIXME: free resources used by m_collections ???
-
-    m_collections.refreshCollections( m_ms->m_global_collection,
-        m_ms->m_ip_collection, m_ms->m_session_collection,
-        m_ms->m_user_collection, m_ms->m_resource_collection);
 
     m_collections.store("ARGS_COMBINED_SIZE", std::string("0"));
     m_ARGScombinedSizeStr = m_collections.resolveFirst("ARGS_COMBINED_SIZE");
@@ -171,6 +154,12 @@ void Transaction::init_collections() {
         "RESPONSE_CONTENT_TYPE");
 
     m_collections.storeOrUpdateFirst("URLENCODED_ERROR", "0");
+
+#ifndef NO_LOGS
+    this->debug(4, "Initializing transaction");
+#endif
+
+    intervention::clean(&m_it);
 }
 
 
@@ -181,12 +170,12 @@ Transaction::~Transaction() {
     m_requestBody.str(std::string());
     m_requestBody.clear();
 
-    for (auto *a : m_rulesMessages) {
-        delete a;
-    }
     m_rulesMessages.clear();
 
     m_rules->decrementReferenceCount();
+
+    intervention::free(&m_it);
+    intervention::clean(&m_it);
 
     delete m_json;
     delete m_xml;
@@ -241,20 +230,6 @@ int Transaction::processConnection(const char *client, int cPort,
     this->m_serverIpAddress = server;
     this->m_clientPort = cPort;
     this->m_serverPort = sPort;
-
-    // Check and apply CollectionBackend engine
-    if (m_rules->m_collectionBackendType != CollectionBackendNotSet) {
-        int rc;
-        rc = m_ms->refreshCollections(m_rules->m_collectionBackendType, m_rules->m_collectionBackendPath.m_value);
-        if (rc == 0) {
-            this->init_collections();
-        } else if (rc == -255) {
-            /* ignore error */
-        } else {
-            /* FIXME:  display LMDB db opening error (LMDB::env_open() failed) */
-        }
-    }
-    
 #ifndef NO_LOGS
     debug(4, "Transaction context created.");
     debug(4, "Starting phase CONNECTION. (SecRules 0)");
@@ -410,6 +385,12 @@ int Transaction::processURI(const char *uri, const char *method,
     m_collections.store("REQUEST_LINE", std::string(method) + " " +
         std::string(uri) + " HTTP/" + std::string(http_version));
 
+    if (pos != std::string::npos) {
+        m_uri_no_query_string_decoded = std::string(m_uri_decoded, 0, pos);
+    } else {
+        m_uri_no_query_string_decoded = std::string(m_uri_decoded);
+    }
+
     if (pos_raw != std::string::npos) {
         m_collections.store("QUERY_STRING", std::string(uri_s, pos_raw + 1,
             uri_s.length() - (pos_raw + 1)));
@@ -425,16 +406,16 @@ int Transaction::processURI(const char *uri, const char *method,
     m_collections.store("REQUEST_FILENAME", path_info);
 
     size_t offset = path_info.find_last_of("/\\");
-    if (offset != std::string::npos) {
-        std::string basename = std::string(path_info, offset,
-            path_info.length() - offset);
+    if (offset != std::string::npos && path_info.length() > offset + 1) {
+        std::string basename = std::string(path_info, offset + 1,
+            path_info.length() - (offset + 1));
         m_collections.store("REQUEST_BASENAME", basename);
     }
     m_collections.store("REQUEST_METHOD", method);
     m_collections.store("REQUEST_PROTOCOL",
         "HTTP/" + std::string(http_version));
 
-    std::string parsedURI = uri;
+    std::string parsedURI = m_uri_decoded;
     // The more popular case is without domain
     if (!m_uri_decoded.empty() && m_uri_decoded.at(0) != '/') {
         bool fullDomain = true;
@@ -787,8 +768,8 @@ int Transaction::processRequestBody() {
     m_collections.resolveMultiMatches("REQUEST_HEADERS", &l);
     for (auto &a : l) {
         fullRequest = fullRequest + \
-            std::string(a->m_key, 16, a->m_key.length() - 16) + ": " \
-            + a->m_value + "\n";
+            std::string(*a->m_key, 16, a->m_key->length() - 16) + ": " \
+            + *a->m_value + "\n";
     }
 
     while (l.empty() == false) {
@@ -898,9 +879,11 @@ int Transaction::appendRequestBody(const unsigned char *buf, size_t len) {
                 debug(5, "Request body limit is marked to reject the " \
                     "request");
 #endif
-                Action *a = new actions::Deny("deny");
-                a->temporaryAction = true;
-                m_actions.push_back(a);
+                intervention::free(&m_it);
+                m_it.log = strdup("Request body limit is marked to " \
+                        "reject the request");
+                m_it.status = 403;
+                m_it.disruptive = true;
             }
             return true;
         }
@@ -975,7 +958,12 @@ int Transaction::addResponseHeader(const std::string& key,
     this->m_collections.store("RESPONSE_HEADERS:" + key, value);
 
     if (utils::string::tolower(key) == "content-type") {
-        this->m_responseContentType->assign(value);
+        // Removes the charset=...
+        // Content-Type: text/html; charset=UTF-8
+        std::vector<std::string> val = utils::string::split(value, ';');
+        if (val.size() > 0) {
+            this->m_responseContentType->assign(val[0]);
+        }
     }
     return 1;
 }
@@ -1155,9 +1143,11 @@ int Transaction::appendResponseBody(const unsigned char *buf, size_t len) {
                 debug(5, "Response body limit is marked to reject the " \
                     "request");
 #endif
-                Action *a = new actions::Deny("deny");
-                a->temporaryAction = true;
-                m_actions.push_back(a);
+                intervention::free(&m_it);
+                m_it.log = strdup("Response body limit is marked to reject " \
+                    "the request");
+                m_it.status = 403;
+                m_it.disruptive = true;
             }
             return true;
         }
@@ -1245,7 +1235,7 @@ int Transaction::processLogging() {
 
     /* If relevant, save this transaction information at the audit_logs */
     if (m_rules != NULL && m_rules->m_auditLog != NULL) {
-        int parts = -1;
+        int parts = this->m_rules->m_auditLog->getParts();
 #ifndef NO_LOGS
         debug(8, "Checking if this request is suitable to be " \
             "saved as an audit log.");
@@ -1256,7 +1246,6 @@ int Transaction::processLogging() {
             debug(4, "There was an audit log modifier for this transaction.");
 #endif
             std::list<std::pair<int, std::string>>::iterator it;
-            parts = this->m_rules->m_auditLog->m_parts;
             debug(7, "AuditLog parts before modification(s): " +
                 std::to_string(parts) + ".");
             for (it = m_auditLogModifier.begin();
@@ -1271,12 +1260,6 @@ int Transaction::processLogging() {
                 }
             }
         }
-#ifndef NO_LOGS
-        if (m_toBeSavedInAuditlogs) {
-            debug(8, "This request was marked to be " \
-                "saved via auditlog action.");
-        }
-#endif
         debug(8, "Checking if this request is relevant to be " \
             "part of the audit logs.");
         bool saved = this->m_rules->m_auditLog->saveIfRelevant(this, parts);
@@ -1304,25 +1287,21 @@ int Transaction::processLogging() {
  *
  */
 bool Transaction::intervention(ModSecurityIntervention *it) {
-    it->status = 200;
-    it->url = NULL;
-    it->disruptive = false;
-    it->log = NULL;
-    it->intercept_msg = NULL;
-    if (m_actions.size() > 0) {
-        for (Action *a : m_actions) {
-            if (a->action_kind == Action::Kind::RunTimeOnlyIfMatchKind) {
-                a->fillIntervention(it);
-                if (this->m_interceptMessage != "") {
-                    it->intercept_msg = this->m_interceptMessage.c_str();
-                }
-            }
-            if (a->temporaryAction) {
-                delete a;
-            }
+    if (m_it.disruptive) {
+        it->url = m_it.url;
+        it->disruptive = m_it.disruptive;
+        it->status = m_it.status;
+
+        if (m_it.log != NULL) {
+            std::string log("");
+            log.append(m_it.log);
+            utils::string::replaceAll(&log, std::string("%d"),
+                std::to_string(it->status));
+            it->log = strdup(log.c_str());
         }
-        m_actions.clear();
+        intervention::reset(&m_it);
     }
+
     return it->disruptive;
 }
 
@@ -1407,30 +1386,31 @@ std::string Transaction::toOldAuditLogFormat(int parts,
 
         m_collections.m_transient->resolveMultiMatches("REQUEST_HEADERS", &l);
         for (auto h : l) {
-            audit_log << h->m_key.c_str() << ": ";
-            audit_log << h->m_value.c_str() << std::endl;
+            size_t pos = strlen("REQUEST_HEADERS:");
+            audit_log << h->m_key->c_str() + pos << ": ";
+            audit_log << h->m_value->c_str() << std::endl;
             delete h;
         }
+        audit_log << std::endl;
     }
     if (parts & audit_log::AuditLog::CAuditLogPart) {
         audit_log << "--" << trailer << "-" << "C--" << std::endl;
+        audit_log << std::endl;
         /** TODO: write audit_log C part. */
     }
     if (parts & audit_log::AuditLog::DAuditLogPart) {
         audit_log << "--" << trailer << "-" << "D--" << std::endl;
+        audit_log << std::endl;
         /** TODO: write audit_log D part. */
     }
-    if (parts & audit_log::AuditLog::EAuditLogPart) {
-        /* FIXME:  check if it's working as expected, and nginx passes
-         * special response (403, etc)
-         */
+    if (parts & audit_log::AuditLog::EAuditLogPart
+        && m_responseBody.tellp() > 0) {
+        std::string body = m_responseBody.str();
         audit_log << "--" << trailer << "-" << "E--" << std::endl;
-#ifdef AUDITLOG_ENABLED
-        std::string body = this->m_responseBody.str();
         if (body.size() > 0) {
             audit_log << body << std::endl;
         }
-#endif
+        audit_log << std::endl;
     }
     if (parts & audit_log::AuditLog::FAuditLogPart) {
         std::vector<const collection::Variable *> l;
@@ -1438,42 +1418,41 @@ std::string Transaction::toOldAuditLogFormat(int parts,
         audit_log << "--" << trailer << "-" << "F--" << std::endl;
         m_collections.m_transient->resolveMultiMatches("RESPONSE_HEADERS", &l);
         for (auto h : l) {
-            audit_log << h->m_key.c_str() << ": ";
-            audit_log << h->m_value.c_str() << std::endl;
+            size_t pos = strlen("RESPONSE_HEADERS:");
+            audit_log << h->m_key->c_str() + pos << ": ";
+            audit_log << h->m_value->c_str() << std::endl;
             delete h;
         }
     }
+    audit_log << std::endl;
+
     if (parts & audit_log::AuditLog::GAuditLogPart) {
         audit_log << "--" << trailer << "-" << "G--" << std::endl;
+        audit_log << std::endl;
         /** TODO: write audit_log G part. */
     }
     if (parts & audit_log::AuditLog::HAuditLogPart) {
         audit_log << "--" << trailer << "-" << "H--" << std::endl;
-#ifdef AUDITLOG_ENABLED
-        for (int i = 0; i < this->m_rules->m_auditLog->m_fired_messages.size(); i++) {
-            std::string m = this->m_rules->m_auditLog->m_fired_messages[i];
-            audit_log << m << std::endl;
+        for (auto a : m_rulesMessages) {
+            audit_log << a.noClientErrorLog(this) << std::endl;
         }
-#endif
+        audit_log << std::endl;
+        /** TODO: write audit_log H part. */
     }
     if (parts & audit_log::AuditLog::IAuditLogPart) {
         audit_log << "--" << trailer << "-" << "I--" << std::endl;
+        audit_log << std::endl;
         /** TODO: write audit_log I part. */
     }
     if (parts & audit_log::AuditLog::JAuditLogPart) {
         audit_log << "--" << trailer << "-" << "J--" << std::endl;
+        audit_log << std::endl;
         /** TODO: write audit_log J part. */
     }
     if (parts & audit_log::AuditLog::KAuditLogPart) {
         audit_log << "--" << trailer << "-" << "K--" << std::endl;
-#ifdef AUDITLOG_ENABLED
-        for (int i = 0; i < this->m_rules->m_auditLog->m_fired_rules.size(); i++) {
-            Rule *r = this->m_rules->m_auditLog->m_fired_rules[i];
-            if (r->m_plainText.size() > 0) {
-                audit_log << r->m_plainText << std::endl << std::endl;
-            }
-        }
-#endif
+        audit_log << std::endl;
+        /** TODO: write audit_log K part. */
     }
     audit_log << "--" << trailer << "-" << "Z--" << std::endl << std::endl;
 
@@ -1522,6 +1501,7 @@ std::string Transaction::toJSON(int parts) {
     LOGFY_ADD("uri", this->m_uri);
 
     if (parts & audit_log::AuditLog::CAuditLogPart) {
+        // FIXME: check for the binary content size.
         LOGFY_ADD("body", this->m_requestBody.str().c_str());
     }
 
@@ -1535,7 +1515,8 @@ std::string Transaction::toJSON(int parts) {
 
         m_collections.m_transient->resolveMultiMatches("REQUEST_HEADERS", &l);
         for (auto h : l) {
-            LOGFY_ADD(h->m_key.c_str(), h->m_value.c_str());
+            size_t pos = strlen("REQUEST_HEADERS:");
+            LOGFY_ADD(h->m_key->c_str() + pos, h->m_value->c_str());
             delete h;
         }
 
@@ -1565,7 +1546,8 @@ std::string Transaction::toJSON(int parts) {
 
         m_collections.m_transient->resolveMultiMatches("RESPONSE_HEADERS", &l);
         for (auto h : l) {
-            LOGFY_ADD(h->m_key.c_str(), h->m_value.c_str());
+            size_t pos = strlen("RESPONSE_HEADERS:");
+            LOGFY_ADD(h->m_key->c_str() + pos, h->m_value->c_str());
             delete h;
         }
 
@@ -1614,33 +1596,33 @@ std::string Transaction::toJSON(int parts) {
         yajl_gen_array_open(g);
         for (auto a : m_rulesMessages) {
             yajl_gen_map_open(g);
-            LOGFY_ADD("message", a->m_message.c_str());
+            LOGFY_ADD("message", a.m_message.c_str());
             yajl_gen_string(g,
-                reinterpret_cast<const unsigned char*>("producer"),
-                strlen("producer"));
+                reinterpret_cast<const unsigned char*>("details"),
+                strlen("details"));
             yajl_gen_map_open(g);
-            LOGFY_ADD("match", a->m_match.c_str());
-            LOGFY_ADD("ruleId", std::to_string(a->m_ruleId).c_str());
-            LOGFY_ADD("file", a->m_ruleFile.c_str());
-            LOGFY_ADD("lineNumber", std::to_string(a->m_ruleLine).c_str());
-            LOGFY_ADD("data", a->m_data.c_str());
-            LOGFY_ADD("severity", std::to_string(a->m_severity).c_str());
-            LOGFY_ADD("ver", a->m_ver.c_str());
-            LOGFY_ADD("rev", a->m_rev.c_str());
+            LOGFY_ADD("match", a.m_match.c_str());
+            LOGFY_ADD("ruleId", std::to_string(a.m_ruleId).c_str());
+            LOGFY_ADD("file", a.m_ruleFile.c_str());
+            LOGFY_ADD("lineNumber", std::to_string(a.m_ruleLine).c_str());
+            LOGFY_ADD("data", a.m_data.c_str());
+            LOGFY_ADD("severity", std::to_string(a.m_severity).c_str());
+            LOGFY_ADD("ver", a.m_ver.c_str());
+            LOGFY_ADD("rev", a.m_rev.c_str());
 
             yajl_gen_string(g,
                 reinterpret_cast<const unsigned char*>("tags"),
                 strlen("tags"));
             yajl_gen_array_open(g);
-            for (auto b : a->m_tags) {
+            for (auto b : a.m_tags) {
                 yajl_gen_string(g,
                     reinterpret_cast<const unsigned char*>(b.c_str()),
                     strlen(b.c_str()));
             }
             yajl_gen_array_close(g);
 
-            LOGFY_ADD("maturity", std::to_string(a->m_maturity).c_str());
-            LOGFY_ADD("accuracy", std::to_string(a->m_accuracy).c_str());
+            LOGFY_ADD("maturity", std::to_string(a.m_maturity).c_str());
+            LOGFY_ADD("accuracy", std::to_string(a.m_accuracy).c_str());
             yajl_gen_map_close(g);
             yajl_gen_map_close(g);
         }

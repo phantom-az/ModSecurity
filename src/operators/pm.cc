@@ -26,6 +26,7 @@
 
 #include "src/operators/operator.h"
 #include "src/utils/acmp.h"
+#include "src/utils/string.h"
 
 namespace modsecurity {
 namespace operators {
@@ -62,7 +63,6 @@ void Pm::cleanup(acmp_node_t *n) {
     }
 
     free(n);
-    n = NULL;
 }
 
 
@@ -75,20 +75,11 @@ void Pm::postOrderTraversal(acmp_btree_node_t *node) {
     postOrderTraversal(node->left);
 
     free(node);
-    node = NULL;
 }
 
-void Pm::replaceAll(std::string str, const std::string& from,
-    const std::string& to) {
-    size_t start_pos = 0;
-    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
-        size_t end_pos = start_pos + from.length();
-        str.replace(start_pos, end_pos, to);
-        start_pos += to.length();
-    }
-}
 
-bool Pm::evaluate(Transaction *transaction, const std::string &input) {
+bool Pm::evaluate(Transaction *transaction, Rule *rule,
+    const std::string &input) {
     int rc = 0;
     ACMPT pt;
     pt.parser = m_p;
@@ -96,8 +87,17 @@ bool Pm::evaluate(Transaction *transaction, const std::string &input) {
     const char *match = NULL;
 
     rc = acmp_process_quick(&pt, &match, input.c_str(), input.length());
+    bool capture = rule && rule->getActionsByName("capture").size() > 0;
+
     if (rc == 1 && transaction) {
         transaction->m_matched.push_back(std::string(match));
+    }
+
+    if (capture && transaction && rc) {
+        transaction->m_collections.storeOrUpdateFirst("TX", "0",
+            std::string(match));
+        transaction->debug(7, "Added pm match TX.0: " + \
+            std::string(match));
     }
 
     return rc == 1;
@@ -108,8 +108,6 @@ bool Pm::init(const std::string &file, std::string *error) {
     std::vector<std::string> vec;
     std::istringstream *iss;
     const char *err = NULL;
-
-    replaceAll(m_param, "\\", "\\\\");
 
     char *content = parse_pm_content(m_param.c_str(), m_param.length(), &err);
     if (content == NULL) {

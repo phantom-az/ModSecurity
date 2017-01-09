@@ -73,7 +73,9 @@ class Rules;
 class RuleMessage;
 namespace actions {
 class Action;
+namespace disruptive {
 enum AllowType : int;
+}
 }
 namespace RequestBodyProcessor {
 class XML;
@@ -163,25 +165,6 @@ class Transaction {
     std::string toOldAuditLogFormatIndex(const std::string &filename,
         double size, const std::string &md5);
 
-
-    /**
-     * This variable is basically set by the `autidlog' action. It means
-     * that this particular transaction was marked to be saved as part of
-     * the auditlogs, even if it is not originally classified to be saved
-     * by `SecAuditLogRelevantStatus'.
-     */
-    bool m_toBeSavedInAuditlogs;
-
-    /**
-     * Set by `noauditlog' action, it means that this particular should
-     * not be saved. Regardless of `SecAuditLogRelevantStatus'.
-     *
-     * @note It is possible to have `auditlog' and `noauditlog' actions
-     * 		 in a same rule, in that case prevails the last input.
-     */
-    bool m_toNotBeSavedInAuditLogs;
-
-
     /**
      * Filled during the class instantiation, this variable can be later
      * used to fill the SecRule variable `duration'. The variable `duration'
@@ -215,13 +198,18 @@ class Transaction {
     const char *m_serverIpAddress;
 
     /**
-     * Holds the raw URI that was requestd.
+     * Holds the raw URI that was requested.
      */
     const char *m_uri;
 
     /**
+     * Holds the URI that was requests (without the query string).
+     */
+    std::string m_uri_no_query_string_decoded;
+
+    /**
      * Holds the combined size of all arguments, later used to fill the
-	 * variable  ARGS_COMBINED_SIZE.
+     * variable  ARGS_COMBINED_SIZE.
      */
     double m_ARGScombinedSize;
 
@@ -301,7 +289,7 @@ class Transaction {
      * of the actions: `log_data' and `msg'. These should be included on the
      * auditlogs.
      */
-    std::list<modsecurity::RuleMessage *> m_rulesMessages;
+    std::list<modsecurity::RuleMessage> m_rulesMessages;
 
     /**
      * Holds the request body, in case of any.
@@ -334,7 +322,7 @@ class Transaction {
     /**
      * If allow action was utilized, this variable holds the allow type.
      */
-    modsecurity::actions::AllowType m_allowType;
+    modsecurity::actions::disruptive::AllowType m_allowType;
 
     /**
      * Holds the decode URI. Notice that m_uri holds the raw version
@@ -346,7 +334,8 @@ class Transaction {
      * Actions (disruptive?) that should be taken by the connector related to
      * that transaction.
      */
-    std::vector<actions::Action *> m_actions;
+    std::vector<ModSecurityIntervention> m_actions;
+    ModSecurityIntervention m_it;
 
     /**
      * Holds the creation time stamp, using std::time.
@@ -372,11 +361,18 @@ class Transaction {
     RequestBodyProcessor::XML *m_xml;
     RequestBodyProcessor::JSON *m_json;
 
-    /**
-     * FIXME: document
-     *
-     */
-    std::string m_interceptMessage;
+    std::string m_variableDuration;
+    std::map<std::string, std::string> m_variableEnvs;
+    std::string m_variableHighestSeverityAction;
+    std::string m_variableRemoteUser;
+    std::string m_variableTime;
+    std::string m_variableTimeDay;
+    std::string m_variableTimeEpoch;
+    std::string m_variableTimeHour;
+    std::string m_variableTimeMin;
+    std::string m_variableTimeSec;
+    std::string m_variableTimeWDay;
+    std::string m_variableTimeYear;
 
  private:
     std::string *m_ARGScombinedSizeStr;
@@ -392,8 +388,6 @@ class Transaction {
      * the web server (connector) log.
      */
     void *m_logCbData;
-
-    void init_collections();
 };
 
 
